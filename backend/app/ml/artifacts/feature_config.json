@@ -1,0 +1,18 @@
+{
+  "features": [
+    "pressure_in_bar",
+    "pressure_out_bar",
+    "pressure_gradient_bar",
+    "flow_lpm",
+    "vibration_rms",
+    "acoustic_rms",
+    "turbidity_ntu",
+    "ambient_temp_c",
+    "demand_index",
+    "pipe_age_years",
+    "diameter_mm",
+    "corrosion_index",
+    "sensor_missing_count"
+  ],
+  "model_version": "AquaGuard-ML-1.0"
+}

@@ -1,0 +1,12 @@
+{
+  "dataset_rows": 57600,
+  "train_rows": 40320,
+  "validation_rows": 8640,
+  "test_rows": 8640,
+  "test_roc_auc": 0.999,
+  "test_pr_auc": 0.9686,
+  "test_f1": 0.8964,
+  "test_rul_mae_hours": 6.98,
+  "random_seed": 42,
+  "model_version": "AquaGuard-ML-1.0"
+}
