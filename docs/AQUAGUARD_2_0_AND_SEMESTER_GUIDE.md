@@ -101,3 +101,21 @@ The Alerts list and detail view now use persisted backend alert records. The lis
 7. Stop the backend and verify the UI reports an API error rather than falling back to mock alert data.
 
 Alert lifecycle changes are application records. They do not independently verify that a pipeline has been physically inspected or repaired.
+
+## Final completion pass
+
+The remaining frontend workspaces were reviewed for demo-only behaviour and API integration:
+
+- Alert Configuration now loads and saves its threshold values and notification preference flags through `GET/PUT /api/configuration`. Both the frontend and backend validate threshold ordering before saving.
+- Workspace Settings now saves the dashboard refresh interval in browser-local preferences and reads backend health/version from `GET /health`. The dashboard uses the selected refresh interval.
+- The navbar alert indicator now lists active alert records from the backend rather than showing hardcoded sample notifications.
+- The demo entry page explicitly states that it is not authentication. User login, password verification, authorisation and profile persistence remain unimplemented.
+- Pipeline Details no longer substitutes mock feature explanations when the API does not return explanation data. The chart labels contribution magnitude without claiming a directional SHAP effect.
+- Pipeline Monitoring sorting and loading/error states were corrected. Repair Priority now identifies its ranking as rule-based and reports API loading/errors.
+- Removed unused mock maintenance and notification state from the application context.
+- Added deterministic unit tests for the PHI and repair-priority scoring services and included them in CI.
+- Added a root README with local setup, seed instructions, environment configuration, quality commands and known limitations.
+
+### Completion and operational boundaries
+
+The application is now suitable as a locally run academic/demo prototype when its backend and seeded database are available. It is not production-ready: authentication, role-based access, audit logging, delivery integrations, field-calibrated model validation, surveyed GIS geometry and physical IoT integration are still future work. Configuration thresholds are stored and validated, but the current prediction/PHI classifiers still use their own fixed thresholds; notification flags do not send email or push notifications.
