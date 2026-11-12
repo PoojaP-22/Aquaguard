@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertTriangle, Clock, Gauge, Droplets, CheckSquare, Brain } from 'lucide-react';
-import { shapData } from '../data/mockData';
 import { api, normalizePipeline } from '../api';
 import { StatusBadge, RiskBadge, PhiGauge } from '../components/ui';
 import { PressureChart, FlowChart } from '../components/Charts';
@@ -14,17 +13,23 @@ export default function PipelineDetails() {
   const [showModal, setShowModal] = useState(false);
   const [pipeline, setPipeline] = useState(null);
   const [prediction, setPrediction] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
   const loadPrediction = async () => {
     if (!id) return;
+    setLoading(true);
+    setError('');
     try {
       const pred = await api.prediction(id);
       setPrediction(pred);
       const p = await api.pipeline(id);
       setPipeline(normalizePipeline(p));
-    } catch (e) { console.error(e); }
+    } catch (e) { setError(e.message || 'Could not load pipeline details.'); }
+    finally { setLoading(false); }
   };
   useEffect(() => { loadPrediction(); }, [id]);
-  if (!pipeline) return <div className="p-6 text-slate-500">Loading pipeline data…</div>;
+  if (loading && !pipeline) return <div className="p-6 text-slate-500">Loading pipeline data…</div>;
+  if (!pipeline) return <div className="p-6 space-y-3"><p role="alert" className="text-sm text-red-700">{error || 'Pipeline not found.'}</p><button onClick={loadPrediction} className="btn-secondary">Try again</button></div>;
 
   const isCritical = pipeline.status === 'Critical';
 
@@ -42,6 +47,7 @@ export default function PipelineDetails() {
               <StatusBadge status={pipeline.status} />
             </div>
             <p className="text-slate-500 text-sm">{pipeline.zone}</p>
+            {error && <p role="alert" className="text-xs text-red-600 mt-1">{error}</p>}
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -90,7 +96,7 @@ export default function PipelineDetails() {
           <div className="flex items-center gap-2 mb-3">
             <Brain size={18} className="text-sky-500" />
             <h2 className="font-semibold text-slate-800">AI Prediction</h2>
-            <span className="ml-auto text-xs text-green-600 font-medium">● Live ML inference</span>
+            <span className="ml-auto text-xs text-green-600 font-medium">● Backend model inference</span>
           </div>
           <div className={`text-lg font-bold mb-3 ${isCritical ? 'text-red-600' : 'text-amber-600'}`}>
             {prediction?.risk_level || pipeline.status} risk prediction
@@ -112,7 +118,7 @@ export default function PipelineDetails() {
           <div className="text-xs bg-slate-50 rounded-lg p-2 space-y-1">
             <div className="text-sky-700 font-medium">Input → sensors → trained models → hybrid risk → SHAP explanation</div>
             <div className="font-medium text-slate-600">Model: {prediction?.model_type || 'AquaGuard ML'}</div>
-            <div className="text-slate-400">Version: {prediction?.model_version || '—'} · Trained on synthetic multi-sensor pipeline data</div>
+            <div className="text-slate-400">Version: {prediction?.model_version || '—'} · Synthetic-data prototype · not field-validated</div>
           </div>
         </div>
 
@@ -123,7 +129,7 @@ export default function PipelineDetails() {
             <h2 className="font-semibold text-slate-800">Why is AquaGuard AI predicting high risk?</h2>
           </div>
           <p className="text-xs text-slate-500 mb-4">Model feature contribution — live API inference</p>
-          <ShapExplanation data={prediction?.shap_explanation || shapData} />
+          <ShapExplanation data={prediction?.shap_explanation || []} />
           <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-100">
             <p className="text-xs text-amber-800">{prediction?.recommended_action || "Review the highest-contributing sensor features and recent trend."}</p>
           </div>
@@ -152,7 +158,7 @@ export default function PipelineDetails() {
         </div>
       </div>
 
-      {showModal && <MaintenanceModal onClose={() => setShowModal(false)} defaultPipeline={pipeline.id} />}
+      {showModal && <MaintenanceModal onClose={() => setShowModal(false)} onSaved={loadPrediction} defaultPipeline={pipeline.id} />}
     </div>
   );
 }
