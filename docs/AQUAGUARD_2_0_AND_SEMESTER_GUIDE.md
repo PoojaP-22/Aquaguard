@@ -73,3 +73,15 @@ The Sensor Telemetry page now reads actual records from the backend instead of i
 5. Stop the backend and verify the page displays an API error rather than presenting stale mock readings as live telemetry.
 
 The readings are application/database telemetry and may be seeded or simulated; they are not evidence of a deployed physical sensor network.
+
+## Maintenance workflow (2.0 follow-up)
+
+Maintenance Logs now reads and writes through the FastAPI maintenance endpoints rather than the frontend-only sample log state. The page loads records from `GET /api/maintenance`, creates records with `POST /api/maintenance`, and updates status with `PUT /api/maintenance/{id}`. It displays the persisted pipeline, issue, priority, action, assigned engineer and status fields. Completing a record uses the backend's existing completion behaviour, including resolving outstanding alerts for that pipeline.
+
+### Maintenance workflow verification
+
+1. Open Maintenance Logs with the backend running and confirm records match `GET /api/maintenance`.
+2. Add a record and verify it is returned by the API and remains visible after a page refresh.
+3. Change a record from Pending or In Progress to Completed and verify `completed_at` is populated by the backend.
+4. If the pipeline has an active alert, verify the backend completion workflow resolves it.
+5. Stop the backend and confirm the page shows an API error rather than displaying frontend sample maintenance records.
