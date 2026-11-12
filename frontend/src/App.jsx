@@ -4,6 +4,7 @@ import Layout from './pages/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import GISMap from './pages/GISMap';
+import SimulationLab from './pages/SimulationLab';
 import PipelineMonitoring from './pages/PipelineMonitoring';
 import PipelineDetails from './pages/PipelineDetails';
 import Alerts from './pages/Alerts';
@@ -13,4 +14,4 @@ import MaintenanceLogs from './pages/MaintenanceLogs';
 import SensorData from './pages/SensorData';
 import AlertConfiguration from './pages/AlertConfiguration';
 import Settings from './pages/Settings';
-export default function App(){return <AppProvider><BrowserRouter><Routes><Route path="/" element={<Login/>}/><Route element={<Layout/>}><Route path="/dashboard" element={<Dashboard/>}/><Route path="/map" element={<GISMap/>}/><Route path="/pipelines" element={<PipelineMonitoring/>}/><Route path="/pipelines/:id" element={<PipelineDetails/>}/><Route path="/alerts" element={<Alerts/>}/><Route path="/alerts/:id" element={<AlertDetails/>}/><Route path="/repair-priority" element={<RepairPriority/>}/><Route path="/maintenance" element={<MaintenanceLogs/>}/><Route path="/sensors" element={<SensorData/>}/><Route path="/configuration" element={<AlertConfiguration/>}/><Route path="/settings" element={<Settings/>}/></Routes></BrowserRouter></AppProvider>;}
+export default function App(){return <AppProvider><BrowserRouter><Routes><Route path="/" element={<Login/>}/><Route element={<Layout/>}><Route path="/dashboard" element={<Dashboard/>}/><Route path="/map" element={<GISMap/>}/><Route path="/simulation" element={<SimulationLab/>}/><Route path="/pipelines" element={<PipelineMonitoring/>}/><Route path="/pipelines/:id" element={<PipelineDetails/>}/><Route path="/alerts" element={<Alerts/>}/><Route path="/alerts/:id" element={<AlertDetails/>}/><Route path="/repair-priority" element={<RepairPriority/>}/><Route path="/maintenance" element={<MaintenanceLogs/>}/><Route path="/sensors" element={<SensorData/>}/><Route path="/configuration" element={<AlertConfiguration/>}/><Route path="/settings" element={<Settings/>}/></Routes></BrowserRouter></AppProvider>;}
