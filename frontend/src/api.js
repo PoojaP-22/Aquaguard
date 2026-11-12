@@ -5,6 +5,7 @@ async function request(path, options = {}) {
  return res.status===204?null:res.json();
 }
 export const api = {
+ health:()=>fetch(`${API_BASE.replace(/\\/api$/, '')}/health`).then(async response=>{if(!response.ok) throw new Error(`API ${response.status}`);return response.json();}),
  dashboard:()=>request('/dashboard/summary'),
  dashboardHistory:(hours=24)=>request(`/dashboard/history?hours=${hours}`),
  pipelines:()=>request('/pipelines'), pipeline:id=>request(`/pipelines/${id}`),
