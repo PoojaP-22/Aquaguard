@@ -11,6 +11,8 @@ export const api = {
  prediction:id=>request(`/predictions/${id}`), predictions:()=>request('/predictions'),
  modelInfo:()=>request('/predictions/model/info'), alerts:()=>request('/alerts'),
  priority:()=>request('/repair-priority'), sensors:()=>request('/sensors'),
+ recentSensors:(limit=100)=>request(`/sensors/recent/all?limit=${limit}`),
+ sensorExportUrl:(limit=2000,pipelineId='')=>`${API_BASE}/sensors/export/csv?limit=${limit}${pipelineId?`&pipeline_id=${encodeURIComponent(pipelineId)}`:''}`,
  sensorHistory:(id,limit=48)=>request(`/sensors/${id}/history?limit=${limit}`),
  simulationStatus:()=>request('/simulation/status'), simulationTick:()=>request('/simulation/tick',{method:'POST'}),
  injectFault:payload=>request('/simulation/inject-fault',{method:'POST',body:JSON.stringify(payload)}),
