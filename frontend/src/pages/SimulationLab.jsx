@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Activity, AlertTriangle, CheckCircle2, CircleGauge, Droplets, Play, RefreshCw, RotateCcw, ShieldAlert, Waves, Zap } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, Droplets, Play, RefreshCw, RotateCcw, ShieldAlert, Waves, Zap } from 'lucide-react';
 import { api, normalizePipeline } from '../api';
 
-const statusTone={Healthy:'text-emerald-300 bg-emerald-400/10',Warning:'text-amber-300 bg-amber-400/10','High Risk':'text-orange-300 bg-orange-400/10',Critical:'text-rose-300 bg-rose-400/10'};
 const fmt=(v,d=2)=>Number.isFinite(Number(v))?Number(v).toFixed(d):'—';
 
 function Stat({label,value,unit,icon:Icon}){return <div className="rounded-xl border border-white/[.08] bg-[#10283A] p-4"><div className="flex items-center justify-between text-[10px] tracking-[.14em] font-bold text-slate-400">{label}<Icon size={15} className="text-cyan-300"/></div><div className="mt-3 text-2xl font-semibold text-white tabular-nums">{value}<small className="ml-1 text-xs font-normal text-slate-400">{unit}</small></div></div>;}
