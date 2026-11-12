@@ -1,8 +1,9 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, GitBranch, AlertTriangle, Wrench, Radio, ClipboardList, Settings2, LogOut, Droplets, User, MapPinned } from 'lucide-react';
+import { LayoutDashboard, GitBranch, AlertTriangle, Wrench, Radio, ClipboardList, Settings2, LogOut, Droplets, User, MapPinned, FlaskConical } from 'lucide-react';
 const links=[
  {to:'/dashboard',icon:LayoutDashboard,label:'Command Center',group:'OPERATIONS'},
  {to:'/map',icon:MapPinned,label:'GIS Network Map',group:'OPERATIONS'},
+ {to:'/simulation',icon:FlaskConical,label:'Simulation Lab',group:'INTELLIGENCE'},
  {to:'/pipelines',icon:GitBranch,label:'Pipeline Assets',group:'OPERATIONS'},
  {to:'/repair-priority',icon:Wrench,label:'Repair Priority',group:'MAINTENANCE'},
  {to:'/alerts',icon:AlertTriangle,label:'AI Alerts',group:'MAINTENANCE'},
