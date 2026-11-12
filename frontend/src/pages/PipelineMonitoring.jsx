@@ -13,13 +13,17 @@ export default function PipelineMonitoring() {
   const [filter, setFilter] = useState('All');
   const [sort, setSort] = useState('Risk');
   const [pipelines, setPipelines] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   useEffect(() => {
     const load = async () => {
       try {
+        setError('');
         await api.predictions();
         const data = await api.pipelines();
         setPipelines(data.map(normalizePipeline));
-      } catch (e) { console.error(e); }
+      } catch (e) { setError(e.message || 'Could not load pipeline data.'); }
+      finally { setLoading(false); }
     };
     load();
     const timer = setInterval(load, 30000);
@@ -59,9 +63,11 @@ export default function PipelineMonitoring() {
           ))}
         </div>
         <select className="input-field w-auto text-xs" value={sort} onChange={e => setSort(e.target.value)}>
-          {sorts.map(s => <option key={s}>Sort by {s}</option>)}
+          {sorts.map(s => <option key={s} value={s}>Sort by {s}</option>)}
         </select>
       </div>
+
+      {error && <div role="alert" className="card border border-red-200 text-sm text-red-700">{error}</div>}
 
       {/* Table */}
       <div className="card p-0 overflow-hidden">
@@ -106,7 +112,8 @@ export default function PipelineMonitoring() {
             </tbody>
           </table>
         </div>
-        {filtered.length === 0 && (
+        {loading && pipelines.length === 0 && <div className="text-center py-12 text-slate-500">Loading pipeline records…</div>}
+        {!loading && !error && filtered.length === 0 && (
           <div className="text-center py-12 text-slate-500">
             <p className="font-medium">No pipelines found</p>
             <p className="text-sm mt-1">Try adjusting your search or filter.</p>

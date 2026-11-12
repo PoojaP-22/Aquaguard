@@ -55,6 +55,40 @@ def update_configuration(payload: ConfigurationUpdate, db: Session = Depends(get
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields provided for update")
 
+    proposed = {
+        field: update_data.get(field, getattr(config, field))
+        for field in (
+            "low_risk_max",
+            "medium_risk_max",
+            "high_risk_max",
+            "critical_risk_min",
+            "phi_healthy_min",
+            "phi_warning_min",
+            "phi_high_risk_min",
+        )
+    }
+    risk_values = [
+        proposed["low_risk_max"],
+        proposed["medium_risk_max"],
+        proposed["high_risk_max"],
+        proposed["critical_risk_min"],
+    ]
+    phi_values = [
+        proposed["phi_healthy_min"],
+        proposed["phi_warning_min"],
+        proposed["phi_high_risk_min"],
+    ]
+    if risk_values != sorted(risk_values) or len(set(risk_values)) != len(risk_values):
+        raise HTTPException(
+            status_code=422,
+            detail="Risk thresholds must be strictly increasing from low to critical.",
+        )
+    if phi_values != sorted(phi_values, reverse=True) or len(set(phi_values)) != len(phi_values):
+        raise HTTPException(
+            status_code=422,
+            detail="PHI thresholds must be strictly decreasing from healthy to high risk.",
+        )
+
     for field, value in update_data.items():
         setattr(config, field, value)
 

@@ -84,16 +84,18 @@ export function FlowChart({ pipelineId }) {
 
 export function PhiHistoryChart({ data }) {
   return (
-    <ResponsiveContainer width="100%" height={240}>
-      <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-        <XAxis dataKey="time" tick={{ fontSize: 10 }} interval={5} />
-        <YAxis tick={{ fontSize: 10 }} domain={[70, 100]} />
-        <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-        <Legend wrapperStyle={{ fontSize: 12 }} />
-        <Line type="monotone" dataKey="phi" name="Overall PHI" stroke="#0ea5e9" strokeWidth={2.5} dot={false} />
-        <Line type="monotone" dataKey="pressure" name="Pressure (MPa)" stroke="#6366f1" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
-        <Line type="monotone" dataKey="flow" name="Flow (L/min)" stroke="#10b981" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
+    <ResponsiveContainer width="100%" height={260}>
+      <LineChart data={data} margin={{ top: 8, right: 18, left: -16, bottom: 2 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,169,184,.13)" />
+        <XAxis dataKey="time" tick={{ fontSize: 10, fill: '#94A9B8' }} interval="preserveStartEnd" />
+        <YAxis yAxisId="phi" domain={[0, 100]} tick={{ fontSize: 10, fill: '#94A9B8' }} />
+        <YAxis yAxisId="pressure" orientation="right" domain={['auto', 'auto']} tick={{ fontSize: 10, fill: '#94A9B8' }} />
+        <YAxis yAxisId="flow" orientation="right" hide domain={['auto', 'auto']} />
+        <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, background: '#10283A', border: '1px solid rgba(255,255,255,.12)', color: '#E5EEF4' }} />
+        <Legend wrapperStyle={{ fontSize: 11, color: '#94A9B8' }} />
+        <Line yAxisId="phi" type="monotone" dataKey="phi" name="Pipeline Health Index" stroke="#35C7B0" strokeWidth={2.5} dot={false} connectNulls />
+        <Line yAxisId="pressure" type="monotone" dataKey="pressure" name="Pressure (MPa)" stroke="#59B9F2" strokeWidth={1.8} dot={false} connectNulls />
+        <Line yAxisId="flow" type="monotone" dataKey="flow" name="Flow (L/min)" stroke="#E8B44F" strokeWidth={1.8} dot={false} connectNulls />
       </LineChart>
     </ResponsiveContainer>
   );
