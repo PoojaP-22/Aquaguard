@@ -33,7 +33,7 @@ export default function MaintenanceModal({ onClose, onSaved, defaultPipeline = '
         notes: form.notes.trim() || null,
         status: 'In Progress',
       });
-      await onSaved();
+      if (onSaved) await onSaved();
       onClose();
     } catch (err) {
       setError(err.message || 'Could not save the maintenance record.');
