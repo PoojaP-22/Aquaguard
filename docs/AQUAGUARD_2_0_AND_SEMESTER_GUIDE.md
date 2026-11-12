@@ -49,3 +49,13 @@ API docs: http://127.0.0.1:8000/docs
 16. Real-world relevance and potential impact
 17. Limitations and research validity
 18. Future enhancements and conclusion
+## Simulation Lab
+The /simulation workspace exposes controlled demo actions through the existing FastAPI simulation API:
+- Inject a leak_pressure_drop fault for a selected pipeline with severity between 0.10 and 1.00.
+- Inspect active in-memory faults and current pipeline condition values.
+- Advance one simulation tick across the network.
+- Clear a selected fault or reset the entire simulated network.
+Reset is intentionally guarded with a confirmation dialog because it restores nominal telemetry and resolves active/acknowledged alerts.
+
+## Automated quality checks
+The GitHub Actions workflow at .github/workflows/quality.yml runs on pull requests to main and pushes to main/aquaguard-2.0. It installs locked frontend dependencies, runs Oxlint and Vite production build, installs backend requirements on Python 3.11, compiles backend modules and runs pip check.
