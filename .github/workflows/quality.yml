@@ -54,5 +54,9 @@ jobs:
           python -m pip install -r backend/requirements.txt
       - name: Compile backend modules
         run: python -m compileall -q backend/app
+      - name: Run scoring service tests
+        env:
+          PYTHONPATH: backend
+        run: python -m unittest discover -s backend/tests -v
       - name: Check installed dependency consistency
         run: python -m pip check
