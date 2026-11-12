@@ -1,12 +1,67 @@
 {
-  "dataset_rows": 57600,
-  "train_rows": 40320,
-  "validation_rows": 8640,
-  "test_rows": 8640,
-  "test_roc_auc": 0.999,
-  "test_pr_auc": 0.9686,
-  "test_f1": 0.8964,
-  "test_rul_mae_hours": 6.98,
+  "model_version": "AquaGuard-ML-1.1",
   "random_seed": 42,
-  "model_version": "AquaGuard-ML-1.0"
+  "dataset": {
+    "source": "Synthetic multi-sensor hydraulic degradation simulation",
+    "asset_split_strategy": "Asset-level disjoint partitioning (168 train, 36 val, 36 test)",
+    "leakage_prevention": "Strict asset-level separation ensures no temporal or asset-specific leakage between train and test sets.",
+    "limitations": "Model trained on synthetic physics-informed degradation; field validation requires empirical water utility telemetry.",
+    "dataset_rows": 57600,
+    "train_rows": 40320,
+    "validation_rows": 8640,
+    "test_rows": 8640
+  },
+  "baseline_comparison": {
+    "heuristic_threshold": {
+      "description": "Rule-based baseline flagging failure when pressure gradient > 0.14 bar or inlet pressure < 0.95 bar",
+      "test_precision": 0.2833,
+      "test_recall": 1.0,
+      "test_f1": 0.4415
+    },
+    "logistic_regression": {
+      "test_roc_auc": 0.9992,
+      "test_pr_auc": 0.9762,
+      "test_precision": 0.9385,
+      "test_recall": 0.9051,
+      "test_f1": 0.9215
+    },
+    "random_forest_risk_model": {
+      "test_roc_auc": 0.999,
+      "test_pr_auc": 0.9686,
+      "test_precision": 0.8561,
+      "test_recall": 0.9407,
+      "test_f1": 0.8964,
+      "confusion_matrix": {
+        "true_negatives": 8347,
+        "false_positives": 40,
+        "false_negatives": 15,
+        "true_positives": 238
+      }
+    }
+  },
+  "rul_model": {
+    "test_rul_mae_hours": 6.98,
+    "test_rul_rmse_hours": 8.74
+  },
+  "feature_importances": {
+    "turbidity_ntu": 0.3416,
+    "vibration_rms": 0.2253,
+    "acoustic_rms": 0.1923,
+    "pressure_gradient_bar": 0.1314,
+    "pressure_out_bar": 0.0478,
+    "flow_lpm": 0.0146,
+    "ambient_temp_c": 0.0141,
+    "corrosion_index": 0.0122,
+    "pipe_age_years": 0.0098,
+    "demand_index": 0.0068,
+    "pressure_in_bar": 0.0034,
+    "diameter_mm": 0.0006,
+    "sensor_missing_count": 0.0001
+  },
+  "technical_distinctions": {
+    "anomaly_detection": "Isolation Forest detects instantaneous out-of-distribution sensor anomalies.",
+    "leak_detection": "Random Forest Classifier estimates the current degradation and vulnerability probability.",
+    "future_failure_prediction": "Random Forest Regressor predicts remaining useful life (RUL in hours) before total breach.",
+    "explainability": "TreeSHAP decomposes risk into segment-specific sensor and structural feature attributions."
+  }
 }

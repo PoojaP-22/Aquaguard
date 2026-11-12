@@ -14,5 +14,5 @@
     "corrosion_index",
     "sensor_missing_count"
   ],
-  "model_version": "AquaGuard-ML-1.0"
+  "model_version": "AquaGuard-ML-1.1"
 }

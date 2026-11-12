@@ -3,7 +3,7 @@ Maintenance routes — track maintenance work on pipelines.
 
 GET  /api/maintenance           list all records
 GET  /api/maintenance/{id}      get one record
-POST /api/maintenance           create a record
+POST /api/maintenance           create a record (links to alerts)
 PUT  /api/maintenance/{id}      update a record
 """
 
@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.maintenance import Maintenance
+from app.models.alert import Alert
 from app.schemas.maintenance import MaintenanceCreate, MaintenanceUpdate, MaintenanceOut
 
 router = APIRouter(prefix="/api/maintenance", tags=["Maintenance"])
@@ -64,10 +65,30 @@ def get_maintenance(record_id: int, db: Session = Depends(get_db)):
     response_model=MaintenanceOut,
     status_code=201,
     summary="Create a maintenance record",
+    description="Logs maintenance action. Automatically updates linked pipeline alerts to Acknowledged or Resolved.",
 )
 def create_maintenance(payload: MaintenanceCreate, db: Session = Depends(get_db)):
     record = Maintenance(**payload.model_dump())
     db.add(record)
+
+    # Automatically synchronize active alerts for this pipeline
+    active_alerts = (
+        db.query(Alert)
+        .filter(
+            Alert.pipeline_id == payload.pipeline_id,
+            Alert.status.in_(["Active", "Acknowledged"]),
+        )
+        .all()
+    )
+    for a in active_alerts:
+        if payload.status == "Completed":
+            a.status = "Resolved"
+            a.resolved_at = datetime.utcnow()
+            a.description += f" [Resolved by maintenance: {payload.action_taken or 'Repair completed'}]"
+        else:
+            a.status = "Acknowledged"
+            a.description += f" [Maintenance scheduled: {payload.assigned_engineer or 'Crew dispatched'}]"
+
     db.commit()
     db.refresh(record)
     return record
@@ -98,6 +119,11 @@ def update_maintenance(
     # Auto-set completed_at when status moves to Completed
     if payload.status == "Completed" and record.completed_at is None:
         record.completed_at = datetime.utcnow()
+        # Also resolve any remaining active alerts for this pipeline
+        alerts = db.query(Alert).filter(Alert.pipeline_id == record.pipeline_id, Alert.status != "Resolved").all()
+        for a in alerts:
+            a.status = "Resolved"
+            a.resolved_at = datetime.utcnow()
 
     db.commit()
     db.refresh(record)

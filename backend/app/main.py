@@ -9,6 +9,7 @@ ReDoc:       http://127.0.0.1:8000/redoc
 """
 
 import os
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,9 +24,20 @@ from app.routes import (
     maintenance,
     configuration,
     predictions,
+    simulation,
 )
 
 load_dotenv()
+
+
+# ---------------------------------------------------------------------------
+# Lifespan — idempotent table creation at startup
+# ---------------------------------------------------------------------------
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_tables()
+    yield
+
 
 # ---------------------------------------------------------------------------
 # App instance
@@ -34,11 +46,12 @@ app = FastAPI(
     title="AquaGuard AI",
     description=(
         "Explainable Predictive Maintenance for Water Distribution Pipelines.\n\n"
-        "**ML:** AquaGuard-ML-1.0 uses a trained Random Forest + Isolation Forest hybrid, "
+        "**ML:** AquaGuard-ML-1.1 uses a trained Random Forest + Isolation Forest hybrid, "
         "with SHAP-based feature explanations and synthetic-data validation. "
         "Field validation requires real sensor data."
     ),
-    version="2.0.0-ml",
+    version="2.1.0",
+    lifespan=lifespan,
     contact={
         "name": "AquaGuard AI Team",
         "email": "support@aquaguard.io",
@@ -66,14 +79,6 @@ app.add_middleware(
 )
 
 # ---------------------------------------------------------------------------
-# Database — create tables on startup (idempotent)
-# ---------------------------------------------------------------------------
-@app.on_event("startup")
-def on_startup():
-    create_tables()
-
-
-# ---------------------------------------------------------------------------
 # Routers
 # ---------------------------------------------------------------------------
 app.include_router(dashboard.router)
@@ -84,6 +89,7 @@ app.include_router(repair_priority.router)
 app.include_router(maintenance.router)
 app.include_router(configuration.router)
 app.include_router(predictions.router)
+app.include_router(simulation.router)
 
 
 # ---------------------------------------------------------------------------
@@ -96,4 +102,4 @@ def root():
 
 @app.get("/health", tags=["Health"], summary="Detailed health check")
 def health():
-    return {"status": "healthy", "version": "2.0.0-ml", "model_version": "AquaGuard-ML-1.0"}
+    return {"status": "healthy", "version": "2.1.0", "model_version": "AquaGuard-ML-1.1"}

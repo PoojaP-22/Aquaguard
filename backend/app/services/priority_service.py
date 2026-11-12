@@ -1,20 +1,14 @@
 """
 Repair Priority Service for AquaGuard AI.
 
-Ranks pipelines by maintenance urgency using a rule-based scoring formula.
-When the ML model is integrated, this service can be updated to accept
-ML-derived risk scores instead of database fields — no route changes needed.
+Ranks pipelines by maintenance urgency combining ML-predicted leak risk,
+inverse pipeline health index (PHI), and parsed time-to-failure urgency.
 
 Priority Score formula (0–100):
-    score = (leak_risk * 0.5) + ((100 - phi) * 0.3) + (ttf_urgency * 0.2)
-
-    ttf_urgency values:
-        "18 hours" → 100
-        "3 days"   → 70
-        "7 days"   → 40
-        other      → 10
+    score = (leak_risk * 0.50) + ((100 - phi) * 0.30) + (ttf_urgency * 0.20)
 """
 
+import re
 from typing import List, TypedDict, Optional
 
 
@@ -39,21 +33,35 @@ class PriorityResult(TypedDict):
     priority_score: float
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-_TTF_URGENCY: dict[str, float] = {
-    "18 hours": 100.0,
-    "3 days": 70.0,
-    "7 days": 40.0,
-}
+def _parse_ttf_hours(ttf_str: Optional[str]) -> float:
+    if not ttf_str:
+        return 720.0  # 30 days default
+    s = ttf_str.strip().lower()
+    # Extract first numeric match
+    match = re.search(r"(\d+(?:\.\d+)?)", s)
+    if not match:
+        return 720.0
+    val = float(match.group(1))
+    if "hour" in s:
+        return val
+    if "day" in s:
+        return val * 24.0
+    if "week" in s:
+        return val * 168.0
+    return val
 
 
 def _ttf_urgency(time_to_failure: Optional[str]) -> float:
-    if time_to_failure is None:
-        return 10.0
-    return _TTF_URGENCY.get(time_to_failure, 10.0)
+    hours = _parse_ttf_hours(time_to_failure)
+    if hours <= 24.0:
+        return 100.0
+    if hours <= 72.0:
+        return 70.0
+    if hours <= 168.0:
+        return 40.0
+    if hours <= 360.0:
+        return 25.0
+    return 10.0
 
 
 def _priority_label(score: float) -> str:
@@ -70,31 +78,16 @@ def _recommended_action(priority: str, pipeline_id: str, ttf: Optional[str]) -> 
     ttf_str = f" within {ttf}" if ttf else ""
     actions = {
         "Critical": f"Dispatch maintenance crew to {pipeline_id} immediately{ttf_str}.",
-        "High":     f"Schedule inspection of {pipeline_id} within 24–48 hours.",
-        "Medium":   f"Monitor {pipeline_id} closely. Plan inspection this week.",
-        "Low":      f"Log {pipeline_id} for routine next-cycle inspection.",
+        "High": f"Schedule inspection of {pipeline_id} within 24–48 hours.",
+        "Medium": f"Monitor {pipeline_id} closely. Plan inspection this week.",
+        "Low": f"Log {pipeline_id} for routine next-cycle inspection.",
     }
     return actions.get(priority, "Review pipeline condition.")
 
 
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
-
 def calculate_repair_priority(pipelines: List[PriorityInput]) -> List[PriorityResult]:
     """
-    Rank a list of pipelines by repair urgency.
-
-    Parameters
-    ----------
-    pipelines : list of PriorityInput
-        Each dict must contain pipeline_id, zone, leak_risk, phi,
-        time_to_failure, and status.
-
-    Returns
-    -------
-    list of PriorityResult
-        Sorted highest-priority first, with 1-based rank assigned.
+    Rank pipelines by repair urgency.
     """
     scored: List[dict] = []
 
@@ -105,7 +98,7 @@ def calculate_repair_priority(pipelines: List[PriorityInput]) -> List[PriorityRe
             + (100.0 - p["phi"]) * 0.30
             + urgency * 0.20
         )
-        score = round(min(100.0, max(0.0, score)), 2)
+        score = round(min(100.0, max(0.0, score)), 1)
         priority = _priority_label(score)
 
         scored.append({
@@ -119,10 +112,9 @@ def calculate_repair_priority(pipelines: List[PriorityInput]) -> List[PriorityRe
             "priority_score": score,
         })
 
-    # Sort by descending priority score
+    # Sort descending by priority_score
     scored.sort(key=lambda x: x["priority_score"], reverse=True)
 
-    # Assign 1-based ranks
     results: List[PriorityResult] = []
     for i, item in enumerate(scored, start=1):
         results.append(PriorityResult(rank=i, **item))
