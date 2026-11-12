@@ -1,209 +1,35 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, AlertTriangle, Droplets, Radio, Wrench, TrendingUp } from 'lucide-react';
-
+import { Activity, AlertTriangle, ArrowRight, Gauge, Radio, RefreshCw, ShieldCheck, Waves, Wrench } from 'lucide-react';
 import { api, normalizeAlert, normalizePipeline } from '../api';
-import { StatusBadge, RiskBadge } from '../components/ui';
 import { PhiHistoryChart } from '../components/Charts';
-import PipelineNetwork from '../components/PipelineNetwork';
 
+function Metric({label,value,unit,caption,icon:Icon,tone='cyan'}) {
+ const tones={cyan:'text-cyan-300 bg-cyan-400/10',green:'text-emerald-300 bg-emerald-400/10',amber:'text-amber-300 bg-amber-400/10',red:'text-rose-300 bg-rose-400/10'};
+ return <div className="rounded-xl border border-white/[.08] bg-[#10283A] p-4"><div className="flex items-center justify-between"><span className="text-[10px] tracking-[.15em] font-bold text-slate-400">{label}</span><span className={`p-2 rounded-lg ${tones[tone]}`}><Icon size={16}/></span></div><div className="mt-3 flex items-baseline gap-1"><span className="text-3xl font-semibold text-white tabular-nums">{value}</span>{unit&&<span className="text-xs text-slate-400">{unit}</span>}</div><div className="text-xs text-slate-500 mt-1">{caption}</div></div>;
+}
+function Panel({title,sub,children,action}) {return <section className="rounded-xl border border-white/[.08] bg-[#0D2233] overflow-hidden"><div className="px-4 py-3 border-b border-white/[.07] flex items-center justify-between gap-3"><div><h2 className="text-sm font-semibold text-slate-100">{title}</h2>{sub&&<p className="text-[11px] text-slate-500 mt-1">{sub}</p>}</div>{action}</div><div className="p-4">{children}</div></section>;}
+const colors={Healthy:'#20B88A',Warning:'#E8B44F','High Risk':'#F28B50',Critical:'#F05C69'};
+function NetworkPreview({pipelines,onOpen}) {
+ const coords=[[48,20],[20,43],[50,43],[78,43],[34,69],[65,69],[88,20],[12,20],[88,69],[50,88],[22,88],[76,88]];
+ return <div className="relative rounded-lg overflow-hidden bg-[#091B2A] border border-white/[.06]"><div className="absolute inset-0 opacity-30" style={{backgroundImage:'linear-gradient(rgba(65,120,140,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(65,120,140,.16) 1px,transparent 1px)',backgroundSize:'34px 34px'}}/><svg viewBox="0 0 100 100" className="relative w-full h-[260px]"><g stroke="#1B526A" strokeWidth="1.6" fill="none">{coords.slice(1).map((c,i)=><path key={i} d={`M${coords[i][0]} ${coords[i][1]} Q${(coords[i][0]+c[0])/2} ${(coords[i][1]+c[1])/2-12} ${c[0]} ${c[1]}`}/>)}</g>{pipelines.slice(0,12).map((p,i)=>{const [x,y]=coords[i];return <g key={p.id} onClick={()=>onOpen(p.id)} className="cursor-pointer"><circle cx={x} cy={y} r="3.5" fill={colors[p.status]||'#20B88A'} stroke="#DDF9F3" strokeWidth=".8"/><text x={x+3.5} y={y-3} fontSize="3" fill="#B7D0D8">{p.id}</text></g>})}</svg><div className="absolute bottom-3 left-3 text-[10px] text-cyan-100/60">NETWORK TOPOLOGY · SCHEMATIC</div></div>;
+}
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const [phiData, setPhiData] = useState([]);
-  const [pipelines, setPipelines] = useState([]);
-  const [alerts, setAlerts] = useState([]);
-  const [repairPriority, setRepairPriority] = useState([]);
-  const [summary, setSummary] = useState(null);
-  useEffect(() => {
-    const buildHistory = () => {
-      const now = Date.now();
-      setPhiData(Array.from({length: 24}, (_, i) => ({
-        time: new Date(now - (23-i)*3600000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
-        phi: Math.max(0, (summary?.pipeline_health ?? 90) + Math.sin(i/3)*1.8),
-        pressure: 0, flow: 0
-      })));
-    };
-    buildHistory();
-  }, [summary]);
-  useEffect(() => {
-    const load = async () => {
-      try {
-        // Refresh predictions first so every dashboard value reflects the trained ML model.
-        await api.predictions();
-        const [p,a,r,s] = await Promise.all([api.pipelines(), api.alerts(), api.priority(), api.dashboard()]);
-        setPipelines(p.map(normalizePipeline));
-        setAlerts(a.map(normalizeAlert));
-        setRepairPriority(r.map(x => ({...x, pipeline:x.pipeline_id, timeToFailure:x.time_to_failure, action:x.recommended_action})));
-        setSummary(s);
-      } catch (e) { console.error(e); }
-    };
-    load();
-    const timer = setInterval(load, 30000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const healthy = pipelines.filter(p => p.status === 'Healthy').length;
-  const activeAlerts = alerts.filter(a => a.status === 'Active');
-  const highAlerts = activeAlerts.filter(a => a.priority === 'Critical' || a.priority === 'High').length;
-  const medAlerts = activeAlerts.filter(a => a.priority === 'Medium').length;
-
-  return (
-    <div className="p-6 space-y-6 max-w-screen-2xl mx-auto">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Good morning, Arun 👋</h1>
-          <p className="text-slate-500 text-sm mt-1">Here's the current health of your water distribution network.</p>
-          <div className="inline-flex items-center gap-2 mt-2 px-2.5 py-1 rounded-full bg-sky-50 border border-sky-100 text-sky-700 text-xs font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-sky-500" /> AquaGuard-ML-1.0 · Random Forest + Isolation Forest
-          </div>
-        </div>
-        <div className="hidden sm:flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-3 py-1.5 rounded-full text-xs font-medium">
-          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          All systems operational
-        </div>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-        <div className="card">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Pipeline Health Index</span>
-            <Activity size={16} className="text-sky-500" />
-          </div>
-          <div className="text-3xl font-bold text-sky-600">{summary ? summary.pipeline_health.toFixed(1) : "—"}</div>
-          <div className="text-xs text-slate-500 mt-1">Overall PHI</div>
-          <div className="text-xs text-slate-500 font-medium mt-1">Calculated from current ML predictions</div>
-          <div className="mt-2"><span className="badge-healthy">Healthy</span></div>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Monitored Pipelines</span>
-            <Droplets size={16} className="text-sky-500" />
-          </div>
-          <div className="text-3xl font-bold text-slate-800">{summary?.monitored_pipelines ?? "—"}</div>
-          <div className="text-xs text-slate-500 mt-1">Active pipeline segments</div>
-          <div className="text-xs text-green-600 font-medium mt-1">{healthy} Healthy</div>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Active Alerts</span>
-            <AlertTriangle size={16} className="text-red-500" />
-          </div>
-          <div className="text-3xl font-bold text-red-600">{summary?.active_alerts ?? activeAlerts.length}</div>
-          <div className="flex gap-2 mt-2">
-            <span className="badge-critical">{highAlerts} High</span>
-            <span className="badge-medium">{medAlerts} Medium</span>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Leak Risk</span>
-            <TrendingUp size={16} className="text-amber-500" />
-          </div>
-          <div className="text-3xl font-bold text-amber-600">{summary ? summary.leak_risk.toFixed(1) : "—"}%</div>
-          <div className="text-xs text-slate-500 mt-1">Network leak risk</div>
-          <div className="mt-2"><span className="badge-medium">Moderate</span></div>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Sensors Online</span>
-            <Radio size={16} className="text-sky-500" />
-          </div>
-          <div className="text-3xl font-bold text-slate-800">{summary?.sensors_online ?? "—"}<span className="text-lg text-slate-400">/{summary?.total_sensors ?? "—"}</span></div>
-          <div className="text-xs text-slate-500 mt-1">Live backend sensor status</div>
-          <div className="mt-2"><span className="badge-healthy">Operational</span></div>
-        </div>
-      </div>
-
-      {/* PHI Chart */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="font-semibold text-slate-800">Pipeline Health Overview</h2>
-            <p className="text-xs text-slate-500">PHI, pressure and flow trends over the last 24 hours</p>
-          </div>
-        </div>
-        <PhiHistoryChart data={phiData} />
-      </div>
-
-      {/* Alerts + Network */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Active Alerts */}
-        <div className="xl:col-span-2 card">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-slate-800">Active AI Alerts</h2>
-            <button onClick={() => navigate('/alerts')} className="text-xs text-sky-500 hover:underline">View all</button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-xs text-slate-500 border-b border-slate-100">
-                  <th className="text-left pb-2 font-medium">Pipeline</th>
-                  <th className="text-left pb-2 font-medium">Risk</th>
-                  <th className="text-left pb-2 font-medium hidden md:table-cell">Reason</th>
-                  <th className="text-left pb-2 font-medium">Priority</th>
-                  <th className="text-left pb-2 font-medium hidden sm:table-cell">Time</th>
-                  <th className="text-left pb-2 font-medium">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {activeAlerts.slice(0, 4).map(a => (
-                  <tr key={a.id} className="hover:bg-slate-50">
-                    <td className="py-2.5">
-                      <div className="font-medium text-slate-800">{a.pipeline}</div>
-                      <div className="text-xs text-slate-500">{a.zone}</div>
-                    </td>
-                    <td className="py-2.5"><RiskBadge risk={a.risk} /></td>
-                    <td className="py-2.5 hidden md:table-cell text-xs text-slate-600 max-w-[160px] truncate">{a.reason}</td>
-                    <td className="py-2.5"><StatusBadge status={a.priority} /></td>
-                    <td className="py-2.5 hidden sm:table-cell text-xs text-slate-500">{a.time}</td>
-                    <td className="py-2.5">
-                      <button onClick={() => navigate(`/alerts/${a.id}`)} className="text-xs text-sky-500 hover:underline font-medium">View</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Pipeline Network */}
-        <PipelineNetwork />
-      </div>
-
-      {/* Repair Priority */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="font-semibold text-slate-800">Repair Priority</h2>
-            <p className="text-xs text-slate-500">AI-ranked maintenance recommendations</p>
-          </div>
-          <button onClick={() => navigate('/repair-priority')} className="btn-secondary text-xs">View Full Priority</button>
-        </div>
-        <div className="space-y-3">
-          {repairPriority.slice(0, 3).map(r => (
-            <div key={r.rank} className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors"
-              onClick={() => navigate(`/pipelines/${r.pipeline}`)}>
-              <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600 flex-shrink-0">
-                #{r.rank}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-slate-800 text-sm">{r.pipeline} — {r.zone}</span>
-                  <StatusBadge status={r.priority} />
-                </div>
-                <div className="text-xs text-slate-500 mt-0.5">Leak Risk: {r.risk}% · Est. failure: {r.timeToFailure}</div>
-              </div>
-              <Wrench size={16} className="text-slate-400 flex-shrink-0" />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+ const navigate=useNavigate();
+ const [pipelines,setPipelines]=useState([]),[alerts,setAlerts]=useState([]),[priority,setPriority]=useState([]),[summary,setSummary]=useState(null),[history,setHistory]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
+ const load=async()=>{try{setError('');await api.predictions();const [p,a,r,s,h]=await Promise.all([api.pipelines(),api.alerts(),api.priority(),api.dashboard(),api.dashboardHistory(24)]);setPipelines(p.map(normalizePipeline));setAlerts(a.map(normalizeAlert));setPriority(r);setSummary(s);setHistory(h);}catch(e){setError('Backend unavailable. Start the FastAPI service to load live network telemetry.');}finally{setLoading(false);}};
+ useEffect(()=>{load();const t=setInterval(load,30000);return()=>clearInterval(t);},[]);
+ const activeAlerts=alerts.filter(a=>a.status==='Active'),healthy=pipelines.filter(p=>p.status==='Healthy').length,critical=activeAlerts.filter(a=>a.priority==='Critical').length;
+ const avgPressure=pipelines.length?pipelines.reduce((n,p)=>n+Number(p.pressure||0),0)/pipelines.length:0,avgFlow=pipelines.length?pipelines.reduce((n,p)=>n+Number(p.flow||0),0)/pipelines.length:0;
+ const trend=history.map(x=>({...x,pressure:Number(x.pressure),flow:Number(x.flow),phi:Number(x.phi)}));
+ return <div className="min-h-full bg-[#071725] text-slate-100"><div className="px-5 lg:px-7 py-6 max-w-[1800px] mx-auto space-y-5">
+  <div className="flex flex-wrap items-start justify-between gap-4"><div><div className="flex items-center gap-2 text-[10px] font-bold tracking-[.2em] text-cyan-300"><span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"/> AQUAGUARD INTELLIGENCE PLATFORM</div><h1 className="text-2xl lg:text-3xl font-semibold tracking-tight mt-2">Water Operations Command Center</h1><p className="text-sm text-slate-400 mt-1">Network health, hydraulic performance and predictive maintenance overview.</p></div><div className="flex items-center gap-2"><span className="rounded-lg border border-white/10 bg-white/[.04] px-3 py-2 text-[11px] text-slate-400">{loading?'Synchronising…':'30 sec refresh'}</span><button onClick={load} className="rounded-lg border border-white/10 p-2.5 hover:bg-white/10 text-slate-300"><RefreshCw size={16}/></button></div></div>
+  {error&&<div className="rounded-lg border border-amber-400/20 bg-amber-400/10 text-amber-200 p-3 text-sm">{error}</div>}
+  <div className="grid grid-cols-2 xl:grid-cols-5 gap-3"><Metric label="NETWORK HEALTH" value={summary?summary.pipeline_health.toFixed(1):'—'} unit="/100" caption="Pipeline Health Index" icon={ShieldCheck} tone="green"/><Metric label="PIPELINE ASSETS" value={summary?.monitored_pipelines??'—'} caption={`${healthy} currently healthy`} icon={Waves}/><Metric label="ACTIVE ALERTS" value={summary?.active_alerts??activeAlerts.length} caption={`${critical} critical requiring review`} icon={AlertTriangle} tone="red"/><Metric label="AVERAGE PRESSURE" value={pipelines.length?avgPressure.toFixed(2):'—'} unit="MPa" caption="Across monitored assets" icon={Gauge} tone="amber"/><Metric label="SENSOR CONNECTIVITY" value={summary?.sensors_online??'—'} unit={`/${summary?.total_sensors??'—'}`} caption="Latest sensor status" icon={Radio} tone="green"/></div>
+  <div className="grid grid-cols-1 2xl:grid-cols-[1.45fr_1fr] gap-4"><Panel title="Network topology" sub="Asset condition overlay · select a segment to inspect" action={<button onClick={()=>navigate('/map')} className="text-xs text-cyan-300 flex items-center gap-1">Open GIS workspace <ArrowRight size={13}/></button>}><NetworkPreview pipelines={pipelines} onOpen={id=>navigate(`/pipelines/${id}`)}/><div className="flex flex-wrap gap-4 mt-3">{Object.entries(colors).map(([k,v])=><span key={k} className="flex items-center gap-1.5 text-[10px] text-slate-400"><i className="w-2 h-2 rounded-full" style={{background:v}}/>{k}</span>)}</div></Panel>
+  <Panel title="Supply & hydraulic performance" sub="Average readings from current pipeline records"><div className="grid grid-cols-2 gap-3"><div className="rounded-lg bg-[#102B3D] p-4"><div className="text-[10px] tracking-wider text-slate-400">SYSTEM PRESSURE</div><div className="text-3xl font-semibold text-cyan-300 mt-2">{pipelines.length?avgPressure.toFixed(2):'—'}<small className="text-xs text-slate-400 ml-1">MPa</small></div></div><div className="rounded-lg bg-[#102B3D] p-4"><div className="text-[10px] tracking-wider text-slate-400">SYSTEM FLOW</div><div className="text-3xl font-semibold text-emerald-300 mt-2">{pipelines.length?avgFlow.toFixed(1):'—'}<small className="text-xs text-slate-400 ml-1">L/min</small></div></div></div><div className="mt-4"><div className="text-xs text-slate-400 mb-3">Network health distribution</div>{Object.entries(colors).map(([k,v])=><div key={k} className="flex items-center gap-2 mb-2"><span className="w-16 text-[10px] text-slate-400">{k}</span><div className="h-1.5 flex-1 bg-white/10 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{width:`${pipelines.length?pipelines.filter(p=>p.status===k).length/pipelines.length*100:0}%`,background:v}}/></div><span className="text-[10px] text-slate-400 w-5 text-right">{pipelines.filter(p=>p.status===k).length}</span></div>)}</div></Panel></div>
+  <div className="grid grid-cols-1 xl:grid-cols-[1.3fr_1fr] gap-4"><Panel title="Hydraulic and health trends" sub="Hourly aggregates from backend history endpoint"><div className="rounded-lg bg-[#10283A] p-2">{trend.length?<div className="ag-chart-dark"><PhiHistoryChart data={trend}/></div>:<div className="h-52 flex items-center justify-center text-sm text-slate-500">Historical telemetry will appear when readings are available.</div>}</div></Panel><Panel title="Active AI alerts" sub="Prioritised events requiring operator review" action={<button onClick={()=>navigate('/alerts')} className="text-xs text-cyan-300">View all</button>}>{activeAlerts.length?activeAlerts.slice(0,5).map(a=><button key={a.id} onClick={()=>navigate(`/alerts/${a.id}`)} className="w-full flex items-center gap-3 py-3 border-b border-white/[.06] last:border-0 text-left hover:bg-white/[.03] rounded"><span className="w-8 h-8 rounded-lg bg-rose-400/10 text-rose-300 flex items-center justify-center"><AlertTriangle size={15}/></span><span className="flex-1 min-w-0"><b className="block text-xs text-slate-200">{a.pipeline} · {a.prediction}</b><small className="text-[10px] text-slate-500">{a.reason}</small></span><b className="text-xs text-rose-300">{a.risk}%</b></button>):<div className="py-10 text-center text-sm text-slate-500"><ShieldCheck size={24} className="mx-auto mb-2 text-emerald-400"/>No active alerts returned by the API.</div>}</Panel></div>
+  <Panel title="Maintenance priority queue" sub="Ranked recommendations from backend decision engine" action={<button onClick={()=>navigate('/repair-priority')} className="text-xs text-cyan-300">Full queue <ArrowRight size={13} className="inline"/></button>}>{priority.length?priority.slice(0,5).map((r,i)=><div key={r.pipeline_id||r.pipeline||i} className="grid grid-cols-[32px_1fr_auto_auto] gap-3 items-center py-3 border-b border-white/[.06] last:border-0"><span className="w-7 h-7 rounded-lg bg-white/[.06] flex items-center justify-center text-xs">#{r.rank||i+1}</span><div><b className="text-sm text-slate-200">{r.pipeline_id||r.pipeline}</b><div className="text-[10px] text-slate-500">{r.zone||'Pipeline asset'} · {r.recommended_action||r.action||'Review condition'}</div></div><span className="text-xs text-slate-300">{r.risk??r.leak_risk??'—'}% risk</span><Wrench size={15} className="text-slate-500"/></div>):<div className="text-sm text-slate-500 py-6">No priority records available.</div>}</Panel>
+  <div className="flex flex-wrap justify-between gap-2 text-[10px] text-slate-600"><span>AquaGuard AI · Predictive maintenance decision support</span><span>Model outputs are advisory · Verify field conditions before maintenance action</span></div>
+ </div></div>;
 }
