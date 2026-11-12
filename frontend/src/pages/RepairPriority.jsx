@@ -11,20 +11,34 @@ export default function RepairPriority() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState('All');
   const [repairPriority, setRepairPriority] = useState([]);
-  useEffect(() => { api.priority().then(data => setRepairPriority(data.map(x => ({...x, pipeline:x.pipeline_id, timeToFailure:x.time_to_failure, action:x.recommended_action, impact:x.priority_score ?? x.risk})))).catch(console.error); }, []);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const load = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await api.priority();
+      setRepairPriority(data.map(x => ({...x, pipeline:x.pipeline_id, timeToFailure:x.time_to_failure, action:x.recommended_action, impact:x.priority_score ?? x.risk})));
+    } catch (err) { setError(err.message || 'Could not load repair priority.'); }
+    finally { setLoading(false); }
+  };
+  useEffect(() => { load(); }, []);
   const filtered = repairPriority.filter(r => filter === 'All' || r.priority === filter);
 
   return (
     <div className="p-6 space-y-6 max-w-screen-xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Repair Priority</h1>
-        <p className="text-slate-500 text-sm mt-1">AI-ranked maintenance recommendations based on predicted risk and urgency.</p>
+        <p className="text-slate-500 text-sm mt-1">Rule-based maintenance ranking using risk, pipeline health and estimated urgency.</p>
       </div>
+
+      {error && <div role="alert" className="card border border-red-200 text-sm text-red-700">{error} <button onClick={load} className="underline ml-2">Try again</button></div>}
+      {loading && <div className="card text-sm text-slate-500">Loading repair ranking…</div>}
 
       {/* Risk Chart */}
       <div className="card">
         <h2 className="font-semibold text-slate-800 mb-4 text-sm">Risk Score by Pipeline</h2>
-        <ResponsiveContainer width="100%" height={180}>
+        {repairPriority.length > 0 && <ResponsiveContainer width="100%" height={180}>
           <BarChart data={repairPriority} margin={{ top: 0, right: 10, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
             <XAxis dataKey="pipeline" tick={{ fontSize: 11 }} />
@@ -36,7 +50,8 @@ export default function RepairPriority() {
               ))}
             </Bar>
           </BarChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer>}
+        {!loading && repairPriority.length === 0 && <p className="text-sm text-slate-500 py-8 text-center">No pipeline priority records are available.</p>}
       </div>
 
       <div className="flex gap-2 flex-wrap items-center">
