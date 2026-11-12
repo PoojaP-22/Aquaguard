@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, AlertTriangle, ArrowUpRight, Layers3, MapPin, RefreshCw, Search, Waves } from 'lucide-react';
+import { ArrowUpRight, Layers3, MapPin, RefreshCw, Search } from 'lucide-react';
 import { api, normalizePipeline } from '../api';
 
 const positions = [
@@ -14,7 +14,6 @@ const statusColor = (status) => ({ Healthy:'#159B75', Warning:'#D69A32', 'High R
 function NetworkCanvas({ pipelines, selected, onSelect }) {
   const points = pipelines.map((p,i) => ({ ...p, x:positions[i % positions.length][0], y:positions[i % positions.length][1] }));
   const links = points.slice(1).map((p,i) => [points[i],p]).filter((_,i)=>i%2===0);
-  const byId = new Map(points.map(p=>[p.id,p]));
   return <svg viewBox="0 0 1180 700" role="img" aria-label="Schematic pipeline asset network" className="w-full h-full min-h-[530px]">
     <defs>
       <pattern id="blocks" width="118" height="92" patternUnits="userSpaceOnUse"><rect x="7" y="7" width="92" height="65" rx="5" fill="#F0F2F1" stroke="#E2E7E5"/><path d="M18 19h70M18 31h44M18 52h60" stroke="#E3E8E6" strokeWidth="3"/></pattern>
@@ -47,9 +46,9 @@ export default function GISMap() {
   const [query,setQuery]=useState('');
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState('');
-  const load=async()=>{setLoading(true);setError('');try{await api.predictions();const rows=(await api.pipelines()).map(normalizePipeline);setPipelines(rows);setSelected(v=>v||rows[0]?.id||'');}catch(e){setError('Unable to load live pipeline assets. Check that the AquaGuard API is running.');}finally{setLoading(false);}};
+  const load=async()=>{setLoading(true);setError('');try{const rows=(await api.pipelines()).map(normalizePipeline);setPipelines(rows);setSelected(v=>rows.some(p=>p.id===v)?v:(rows[0]?.id||''));}catch(e){setError('Unable to load pipeline assets. Check that the AquaGuard API is running.');}finally{setLoading(false);}};
   useEffect(()=>{load();const t=setInterval(load,30000);return()=>clearInterval(t);},[]);
-  const filtered=useMemo(()=>pipelines.filter(p=>p.id.toLowerCase().includes(query.toLowerCase())||p.zone.toLowerCase().includes(query.toLowerCase())),[pipelines,query]);
+  const filtered=useMemo(()=>pipelines.filter(p=>p.id.toLowerCase().includes(query.toLowerCase())||(p.zone||'').toLowerCase().includes(query.toLowerCase())),[pipelines,query]);
   const active=pipelines.find(p=>p.id===selected);
   const counts=pipelines.reduce((a,p)=>(a[p.status]=(a[p.status]||0)+1,a),{});
   return <div className="min-h-full bg-[#F3F6F5] text-[#172B28]">
