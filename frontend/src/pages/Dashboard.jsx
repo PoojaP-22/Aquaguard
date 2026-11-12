@@ -18,7 +18,7 @@ export default function Dashboard() {
  const navigate=useNavigate();
  const [pipelines,setPipelines]=useState([]),[alerts,setAlerts]=useState([]),[priority,setPriority]=useState([]),[summary,setSummary]=useState(null),[history,setHistory]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const load=async()=>{try{setError('');await api.predictions();const [p,a,r,s,h]=await Promise.all([api.pipelines(),api.alerts(),api.priority(),api.dashboard(),api.dashboardHistory(24)]);setPipelines(p.map(normalizePipeline));setAlerts(a.map(normalizeAlert));setPriority(r);setSummary(s);setHistory(h);}catch(e){setError('Backend unavailable. Start the FastAPI service to load live network telemetry.');}finally{setLoading(false);}};
- useEffect(()=>{load();const t=setInterval(load,30000);return()=>clearInterval(t);},[]);
+ useEffect(()=>{load();const preferences=JSON.parse(localStorage.getItem('aquaguard.preferences')||'{}');const interval=Math.max(5,Math.min(60,Number(preferences.refreshSeconds)||30))*1000;const t=setInterval(load,interval);return()=>clearInterval(t);},[]);
  const activeAlerts=alerts.filter(a=>a.status==='Active'),healthy=pipelines.filter(p=>p.status==='Healthy').length,critical=activeAlerts.filter(a=>a.priority==='Critical').length;
  const avgPressure=pipelines.length?pipelines.reduce((n,p)=>n+Number(p.pressure||0),0)/pipelines.length:0,avgFlow=pipelines.length?pipelines.reduce((n,p)=>n+Number(p.flow||0),0)/pipelines.length:0;
  const trend=history.map(x=>({...x,pressure:Number(x.pressure),flow:Number(x.flow),phi:Number(x.phi)}));
