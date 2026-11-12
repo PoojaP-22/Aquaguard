@@ -85,3 +85,19 @@ Maintenance Logs now reads and writes through the FastAPI maintenance endpoints 
 3. Change a record from Pending or In Progress to Completed and verify `completed_at` is populated by the backend.
 4. If the pipeline has an active alert, verify the backend completion workflow resolves it.
 5. Stop the backend and confirm the page shows an API error rather than displaying frontend sample maintenance records.
+
+## Alert lifecycle workflow (2.0 follow-up)
+
+The Alerts list and detail view now use persisted backend alert records. The list loads from `GET /api/alerts`; the detail view loads an individual record from `GET /api/alerts/{alert_id}`. Operators can move an Active alert to Acknowledged, Resolved or Dismissed using `PUT /api/alerts/{alert_id}`. The detail view displays the saved status and resolved timestamp, and only renders feature contributions that were actually stored with the alert. Creating a maintenance record from an alert now refreshes the alert detail after the save.
+
+### Alert workflow verification
+
+1. Open AI Alerts and confirm records and lifecycle statuses match `GET /api/alerts`.
+2. Open an alert and verify its pipeline, risk score, description and created timestamp match `GET /api/alerts/{alert_id}`.
+3. Acknowledge an Active alert and confirm the status remains Acknowledged after refreshing.
+4. Mark an Active or Acknowledged alert Resolved, then verify the status and `resolved_at` timestamp through the API.
+5. Repeat with Dismissed and verify the closed status persists.
+6. Create a maintenance record from an alert and confirm the record is saved; verify the alert detail refreshes after the save.
+7. Stop the backend and verify the UI reports an API error rather than falling back to mock alert data.
+
+Alert lifecycle changes are application records. They do not independently verify that a pipeline has been physically inspected or repaired.
