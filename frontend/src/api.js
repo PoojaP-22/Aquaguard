@@ -9,7 +9,7 @@ export const api = {
  dashboardHistory:(hours=24)=>request(`/dashboard/history?hours=${hours}`),
  pipelines:()=>request('/pipelines'), pipeline:id=>request(`/pipelines/${id}`),
  prediction:id=>request(`/predictions/${id}`), predictions:()=>request('/predictions'),
- modelInfo:()=>request('/predictions/model/info'), alerts:()=>request('/alerts'),
+ modelInfo:()=>request('/predictions/model/info'), alerts:()=>request('/alerts'), alert:id=>request(`/alerts/${encodeURIComponent(id)}`), updateAlert:(id,payload)=>request(`/alerts/${encodeURIComponent(id)}`,{method:'PUT',body:JSON.stringify(payload)}),
  priority:()=>request('/repair-priority'),
  maintenance:()=>request('/maintenance'),
  createMaintenance:payload=>request('/maintenance',{method:'POST',body:JSON.stringify(payload)}),
