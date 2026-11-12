@@ -59,3 +59,17 @@ Reset is intentionally guarded with a confirmation dialog because it restores no
 
 ## Automated quality checks
 The GitHub Actions workflow at .github/workflows/quality.yml runs on pull requests to main and pushes to main/aquaguard-2.0. It installs locked frontend dependencies, runs Oxlint and Vite production build, installs backend requirements on Python 3.11, compiles backend modules and runs pip check.
+
+## Sensor Telemetry workspace (2.0 follow-up)
+
+The Sensor Telemetry page now reads actual records from the backend instead of importing the frontend mock dataset. It requests the latest record per sensor from `GET /api/sensors` and the newest 100 readings from `GET /api/sensors/recent/all`. The page derives online/offline counts from returned records, shows loading and API-error states, and offers CSV export through `GET /api/sensors/export/csv`. The gateway panel is deliberately labelled as backend telemetry-service status; the database does not currently provide a physical ESP32 heartbeat, so the UI does not claim that a hardware gateway is online.
+
+### Sensor telemetry verification
+
+1. Start the backend and confirm the database seed has run.
+2. Open Sensor Telemetry and verify the sensor count matches `GET /api/sensors`.
+3. Ingest a pressure or flow record using `POST /api/sensors`, refresh the page, and confirm the new reading appears at the top of Recent Sensor Readings.
+4. Use Export CSV and confirm the downloaded file contains the API's timestamp, sensor ID, pipeline ID, sensor type, value, unit, and status columns.
+5. Stop the backend and verify the page displays an API error rather than presenting stale mock readings as live telemetry.
+
+The readings are application/database telemetry and may be seeded or simulated; they are not evidence of a deployed physical sensor network.
