@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, AlertTriangle, ArrowRight, Gauge, Radio, RefreshCw, ShieldCheck, Waves, Wrench } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Gauge, Radio, RefreshCw, ShieldCheck, Waves, Wrench } from 'lucide-react';
 import { api, normalizeAlert, normalizePipeline } from '../api';
 import { PhiHistoryChart } from '../components/Charts';
 
