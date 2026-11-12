@@ -1,0 +1,51 @@
+# AquaGuard AI 2.0 — Semester Delivery Pack
+
+## Product scope
+AquaGuard is an explainable predictive-maintenance decision-support prototype for water distribution assets. It combines telemetry ingestion, ML inference, condition scoring, alert workflows and maintenance prioritisation.
+
+## Implemented in this branch
+- Operations Command Center with backend-driven KPIs, alert list and maintenance queue.
+- GIS Network Map workspace with live pipeline records, status colouring, search, asset inspector and navigation to asset details.
+- API client methods for backend dashboard history and simulation endpoints.
+- Dashboard trend chart now consumes GET /api/dashboard/history rather than synthesising a sinusoidal frontend history.
+- Consistent dark navy / teal operations shell and a light GIS asset workspace.
+
+## Important data-integrity boundaries
+- The GIS view is a schematic topology illustration because the current backend does not expose surveyed coordinates or GeoJSON pipe geometry. Do not use schematic positions for field dispatch.
+- Telemetry is simulated unless a physical sensor gateway is actually connected. The UI labels this mode explicitly.
+- The ML artifacts are trained on synthetic observations. Reported metrics are synthetic test-set metrics, not field-validated accuracy.
+- RUL is learned from a synthetic target generated from the risk function; it is not yet a field-calibrated rupture-time forecast.
+- The persistence component currently has a default derived from model probability when no external persistence feature is supplied.
+
+## Local verification
+Frontend: cd frontend && npm install && npm run build && npm run lint
+Backend: install backend/requirements.txt, then run uvicorn app.main:app --app-dir backend --reload
+API docs: http://127.0.0.1:8000/docs
+
+## Remaining engineering milestones
+1. Add surveyed pipeline coordinates and GeoJSON geometry, then integrate a true GIS renderer and map provider.
+2. Standardise pressure/flow units across schemas, simulator, training data, feature config and inference; retrain artifacts after any feature/unit changes.
+3. Connect remaining pages to real APIs and remove mock/placeholder records.
+4. Add secure authentication, role-based access, audit logs and deployment secrets management.
+5. Integrate physical sensor gateways over MQTT/HTTPS with device identity, timestamps and data-quality flags.
+6. Validate model calibration and generalisation using utility field data and temporal/asset holdouts.
+
+## Semester presentation outline
+1. Title and project overview
+2. Water distribution maintenance problem
+3. Existing approaches and research gap
+4. Proposed AquaGuard workflow
+5. Novelty and project contribution
+6. System architecture
+7. Dataset and feature engineering
+8. Random Forest risk classification
+9. Isolation Forest anomaly detection
+10. Severity and RUL modelling
+11. Hybrid risk scoring and PHI
+12. SHAP explainability
+13. Alert lifecycle and repair prioritisation
+14. Application demonstration
+15. Synthetic test results and baseline comparison
+16. Real-world relevance and potential impact
+17. Limitations and research validity
+18. Future enhancements and conclusion
