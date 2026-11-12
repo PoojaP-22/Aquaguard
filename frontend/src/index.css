@@ -8,6 +8,16 @@
   * { box-sizing: border-box; }
 }
 
+@layer utilities {
+  .bg-white { background-color: #202A33 !important; }
+  .bg-slate-50 { background-color: #151F28 !important; }
+  .bg-slate-100 { background-color: #293640 !important; }
+  .text-slate-800 { color: #E5EDF2 !important; }
+  .text-slate-700 { color: #CBD5DC !important; }
+  .text-slate-600 { color: #A8B6BF !important; }
+  .border-slate-100, .border-slate-200 { border-color: #3A4853 !important; }
+}
+
 @layer components {
   .card { @apply rounded-xl p-5; background: #202A33; border: 1px solid rgba(176,196,207,.12); box-shadow: 0 8px 24px rgba(0,0,0,.16); }
   .btn-primary { @apply bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer; }
